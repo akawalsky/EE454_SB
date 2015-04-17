@@ -1,7 +1,7 @@
 DEVICE     = atmega328p
 CLOCK      = 9830400
 PROGRAMMER = -c avrispmkii -P usb
-OBJECTS    = test_lcd.o
+OBJECTS    = libadc.o libsci.o liblcd.o camelbak.o
 FUSES      = -U hfuse:w:0xd9:m -U lfuse:w:0xe0:m
 
 # Tune the lines below only if you know what you are doing:
