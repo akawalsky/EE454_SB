@@ -34,17 +34,14 @@ const unsigned char str2[] PROGMEM = "123";
 const unsigned char str3[] PROGMEM = "a";
 
 unsigned char lcd_buf[40];
-
-int heart_rate_calc();
-int water_vol_calc();
-bool access_heart_rate();
-
 unsigned int curr_volume;
 
 int main(){
+	global_reset();
 	lcd_gpio_init();
 	lcd_initialize();
 	sci_init();
+	sci_switch(SERIALCOM);
 	adc_init();
 	
 	curr_volume = 0;
@@ -90,6 +87,16 @@ int main(){
 	}
 	return 0;
 }
+
+void global_reset(void){
+	DDRB = 0x00;
+	DDRC = 0x00;
+	DDRD = 0x00;
+	PORTB = 0x00;
+	PORTC = 0x00;
+	PORTD = 0x00;
+}
+
 
 bool access_heart_rate() {
 	int i;

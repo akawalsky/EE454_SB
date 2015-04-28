@@ -18,4 +18,10 @@
 #define FALSE 0
 #endif
 
+
+void global_reset(void);
+int heart_rate_calc();
+int water_vol_calc();
+bool access_heart_rate();
+
 #endif
