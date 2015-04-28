@@ -25,16 +25,20 @@
  insteat of in RAM.
  */
 
-#ifdef NIBBLE_HIGH
-const unsigned char str1[] PROGMEM = "123";
-#else
-const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
-#endif
-const unsigned char str2[] PROGMEM = "123";
-const unsigned char str3[] PROGMEM = "a";
+// #ifdef NIBBLE_HIGH
+// const unsigned char str1[] PROGMEM = "123";
+// #else
+// const unsigned char str1[] PROGMEM = ">> at328-5.c lo <<901234";
+// #endif
+// const unsigned char str2[] PROGMEM = "123";
+// const unsigned char str3[] PROGMEM = "a";
 
 unsigned char lcd_buf[40];
+
+unsigned int curr_hr;
 unsigned int curr_volume;
+unsigned int prev_volume;
+unsigned int volume_drank;
 
 int main(){
 	global_reset();
@@ -44,7 +48,13 @@ int main(){
 	sci_switch(SERIALCOM);
 	adc_init();
 	
+	DDRD &= ~(1<<PD2); //Set as input
+	PORTD |= (1<<PD2); //Turn on pull up resistor (active low input)
+
+	curr_hr = 0;
 	curr_volume = 0;
+	prev_volume = 0;
+	volume_drank = 0;
 	
 	while (1){
 		/*lcd_strout(LCD_LINE_I, str1);
@@ -65,27 +75,48 @@ int main(){
 		_delay_ms(1000);
 
 		*/
+		
+		print_current();
+
 		if(access_heart_rate())
 		{
-			int hr = heart_rate_calc();
-			sprintf(lcd_buf, "HR: %d / min", hr);
-			lcd_clearline(LCD_LINE_I);
-			lcd_sstrout(LCD_LINE_I, lcd_buf);
-			_delay_ms(1000);
+			curr_hr = heart_rate_calc();
+			// sprintf(lcd_buf, "HR: %d / min", hr);
+			// lcd_clearline(LCD_LINE_I);
+			// lcd_sstrout(LCD_LINE_I, lcd_buf);
+			// _delay_ms(1000);
 		}
 		
-		curr_volume = water_vol_calc();
-		sprintf(lcd_buf, "Vol: %d ml", curr_volume);
-		lcd_clearline(LCD_LINE_II);
-		lcd_sstrout(LCD_LINE_II, lcd_buf);
+		if(access_vol())
+		{
+			curr_volume = water_vol_calc();
+			calculate_water_drank();
+			// sprintf(lcd_buf, "Vol: %d ml", curr_volume);
+			// lcd_clearline(LCD_LINE_II);
+			// lcd_sstrout(LCD_LINE_II, lcd_buf);
+		}
 		
 		_delay_ms(4000);
 		
 		//lcd_strout(LCD_LINE_II, str3);
 		lcd_clearscreen();
-		_delay_ms(1000);
+		// _delay_ms(1000);
 	}
 	return 0;
+}
+
+void print_current() {
+	sprintf(lcd_buf, "HR: %u BPM", curr_hr);
+	lcd_clearline(LCD_LINE_I);
+	lcd_sstrout(LCD_LINE_I, lcd_buf);
+
+	sprintf(lcd_buf, "Volume: %u ml", curr_volume);
+	lcd_clearline(LCD_LINE_II);
+	lcd_sstrout(LCD_LINE_II, lcd_buf);
+
+	sprintf(lcd_buf, "Drank: %d ml", volume_drank);
+	// lcd_clearline(LCD_LINE_III);
+	lcd_sstrout(LCD_LINE_III, lcd_buf);
 }
 
 void global_reset(void){
@@ -111,41 +142,70 @@ bool access_heart_rate() {
 		last = current;
 		_delay_ms(100);
 	}
+	// sci_outString(beats);
 	return beats >= 1;
 }
 
 int heart_rate_calc(){
-	lcd_clearline(LCD_LINE_I);
+	// lcd_clearline(LCD_LINE_IV);
 	sprintf(lcd_buf, "Calculating HR...");
-	lcd_sstrout(LCD_LINE_I, lcd_buf);
+	lcd_sstrout(LCD_LINE_IV, lcd_buf);
 	int i;
 	int current;
 	int last = 0;
 	int beats = 0;
 	for (i = 0; i < 100; i++) {
 		current = adc_heart_read();
-		sprintf(lcd_buf, "[Pulse Test] Pulse value is: %i\r\n", current);
-		sci_outString(lcd_buf);
+		// sprintf(lcd_buf, "[Pulse Test] Pulse value is: %i\r\n", current);
+		// sci_outString(lcd_buf);
 		if (current >= 240 && last < 240) {
 			beats++;
 		}
 		last = current;
 		_delay_ms(100);
 	}
-	return beats * 6;
+	int hr = beats * 6;
+	return (hr > 50 && hr < 150) ? hr : curr_hr;
+}
+
+bool access_vol() {
+	int downs = 0;
+	int i;
+	for (i = 0; i < 10; i++) {
+		if((PIND & (1<<PD2)) == 0)
+		{
+			downs++;
+		}
+		_delay_ms(100);
+	}
+	return downs > 8;
 }
 
 int water_vol_calc(){
 	/* Dummy Test*/
-	lcd_clearline(LCD_LINE_II);
+	// lcd_clearline(LCD_LINE_IV);
 	sprintf(lcd_buf, "Calculating Vol...");
-	lcd_sstrout(LCD_LINE_II, lcd_buf);
+	lcd_sstrout(LCD_LINE_IV, lcd_buf);
 	
+	int pressure;
+	int volume = 0;
 	int i = 0;
 	for(;i < 20; i++){
-		sprintf(lcd_buf, "[Pressure Test] Pressure value is: %i\r\n", adc_pressure_read());
-		sci_outString(lcd_buf);
+		pressure = adc_pressure_read();
+		volume += vol_map(pressure);
+		// sprintf(lcd_buf, "[Pressure Test] Pressure: %i , Volume: %i\r\n", pressure, vol_map(pressure));
+		// sci_outString(lcd_buf);
 		_delay_ms(100);
 	}
-	return adc_pressure_read();
+	volume = volume/20;
+	//return volume;
+	return abs(curr_volume - volume > 20) ? volume : curr_volume;
+}
+
+void calculate_water_drank() {
+	if(curr_volume < prev_volume)
+	{
+		volume_drank += (prev_volume - curr_volume);
+	}
+	prev_volume = curr_volume;
 }

@@ -41,14 +41,14 @@ int main (){
 		//lcd_test();
 		//_delay_ms(1000);
 		blt_send_test();
-		//_delay_ms(1000);
+		_delay_ms(1000);
 		//blt_recv_test();
-		sci_inString(inbuf);
+	/*	sci_inString(inbuf);
 		int i = atoi(inbuf);
 		i = i * 10 + 5;
 		sprintf(outbuf, "number is: %d", i);
 		lcd_clearline(LCD_LINE_I);
-		lcd_sstrout(LCD_LINE_I, outbuf);
+		lcd_sstrout(LCD_LINE_I, outbuf);*/
 	}
 	return 0;
 }
@@ -66,13 +66,13 @@ void lcd_test(){
 
 void blt_send_test(){
 	/* Send a string */
-	sprintf(outbuf, "Hello Bluetooth\n");
+	sprintf(outbuf, "96,630<\n");
 	sci_outString(outbuf);
 	_delay_ms(100);
 	/* Send another string */
-	sprintf(outbuf, "Symbols: + - * / \n");
+	/*sprintf(outbuf, "Symbols: + - * /<\n");
 	sci_outString(outbuf);
-}
+*/}
 
 void blt_recv_test(){
 	/* receive a char */

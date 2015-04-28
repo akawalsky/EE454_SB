@@ -18,10 +18,14 @@
 #define FALSE 0
 #endif
 
+void print_current();
 
 void global_reset(void);
 int heart_rate_calc();
 int water_vol_calc();
 bool access_heart_rate();
+bool access_vol();
+
+void calculate_water_drank();
 
 #endif

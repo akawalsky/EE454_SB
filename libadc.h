@@ -16,4 +16,5 @@
 void adc_init();
 int adc_heart_read();
 int adc_pressure_read();
+int vol_map(int);
 #endif
